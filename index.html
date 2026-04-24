@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmojiGen for GitHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <style>
+        body { @apply bg-gray-900 text-gray-100 font-sans; }
+        .container { @apply max-w-4xl mx-auto p-8; }
+        .header { @apply text-4xl font-bold text-center mb-8; }
+        .btn { @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300; }
+        .card { @apply bg-gray-800 p-6 rounded-lg shadow-md; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">✨ EmojiGen for GitHub ✨</h1>
+        <p class="text-xl text-center mb-10">Instantly create custom emoji packs for your GitHub repositories.</p>
+        
+        <div class="text-center space-y-6">
+            <p class="text-lg">Tired of boring reactions? Generate 5-10 unique emojis based on your text prompt.</p>
+            <p class="text-lg">Get a ready-to-import .zip file with images and a manifest.</p>
+            
+            <button id="generate-button" class="btn">Generate Your Emoji Pack (Coming Soon!)</button>
+            <p class="text-sm mt-4">Sign up to be notified when we launch!</p>
+            <input type="email" placeholder="Your Email" class="p-3 rounded-md w-full max-w-sm text-gray-900">
+            <button class="btn bg-green-600 hover:bg-green-700">Notify Me</button>
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-gray-700 text-center">
+            <p>&copy; 2023 APEX Products. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
