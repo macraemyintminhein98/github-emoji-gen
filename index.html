@@ -3,104 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Emoji Generator</title>
+    <title>Emoji Pack Generator</title>
+    <meta name="description" content="Generate GitHub-ready emoji packs from your images.">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f6f8fa; color: #24292e; }
-        .container { max-width: 900px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #0366d6; }
-        input[type="text"] { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #d1d5da; border-radius: 6px; font-size: 16px; }
-        .filters button { background-color: #f3f4f6; border: 1px solid #d1d5da; border-radius: 6px; padding: 8px 12px; margin-right: 8px; margin-bottom: 8px; cursor: pointer; }
-        .filters button.active { background-color: #0366d6; color: #fff; }
-        .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 20px; }
-        .emoji-item { background-color: #f6f8fa; padding: 10px; border-radius: 6px; text-align: center; cursor: pointer; border: 1px solid #e1e4e8; transition: transform 0.1s ease; }
-        .emoji-item:hover { transform: translateY(-2px); }
-        .emoji-item span { display: block; font-size: 2em; margin-bottom: 5px; }
-        .emoji-item small { font-size: 0.8em; color: #586069; word-break: break-all; }
-        .st-btn { display: block; text-align: center; margin-top: 30px; }
-        .stripe-button-el span { background-image: none !important; box-shadow: none !important; font-size: 16px !important; }
+        body { font-family: sans-serif; }
+        .container-box { max-width: 500px; margin: 50px auto; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: white; }
+        .file-input-wrapper { border: 2px dashed #cbd5e0; padding: 20px; text-align: center; cursor: pointer; border-radius: 8px; transition: border-color 0.3s; }
+        .file-input-wrapper:hover { border-color: #a0aec0; }
+        #file-upload { display: none; }
+        .btn-primary { background-color: #6366f1; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; transition: background-color 0.3s; margin-top: 20px; }
+        .btn-primary:hover { background-color: #4f46e5; }
+        .loading-spinner { border: 4px solid rgba(0, 0, 0, 0.1); border-top: 4px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: none; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>GitHub Emoji Generator</h1>
-        <p>Quickly find and copy GitHub-compatible emoji shortcuts.</p>
-        <input type="text" id="searchInput" placeholder="Search emojis..." onkeyup="filterEmojis()">
+<body class="bg-gray-100 p-4">
+    <div class="container-box">
+        <h1 class="text-2xl font-bold text-center mb-6">GitHub Emoji Pack Generator</h1>
+        <p class="text-center text-gray-600 mb-6">Upload an image to create a GitHub-ready emoji pack: resized, optimized, and bundled with a manifest.</p>
+        
+        <div class="file-input-wrapper" onclick="document.getElementById('file-upload').click();">
+            <p class="text-gray-500">Drag &amp; drop your image here, or click to select</p>
+            <input type="file" id="file-upload" accept="image/*">
+        </div>
+        <p id="file-name" class="text-center text-gray-700 mt-2"></p>
+        
+        <div class="text-center">
+            <button id="generate-button" class="btn-primary" disabled>Generate Emoji Pack</button>
+            <div id="loading-spinner" class="loading-spinner mt-4"></div>
+        </div>
 
-        <div class="filters" id="filterButtons"></div>
-
-        <div class="emoji-grid" id="emojiContainer"></div>
-
-        <p style="text-align: center; margin-top: 20px;"><strong>Liked it? Get lifetime access!</strong></p>
-        <form action="/checkout" method="POST" class="st-btn">
-            <button type="submit" style="background-color: #28a745; color: white; padding: 12px 25px; border: none; border-radius: 6px; cursor: pointer; font-size: 18px;">
-                Buy for ${{price}} (One-time purchase)
-            </button>
-        </form>
+        <div id="result" class="mt-6 text-center" style="display:none;">
+            <p class="text-green-600 font-semibold mb-2">Your emoji pack is ready!</p>
+            <a id="download-link" href="#" class="btn-primary inline-block no-underline" download>Download Pack</a>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/emoji-datasource-github@5.0.1/emoji.json"></script>
     <script>
-        const emojis = window.emoji; // Loaded from CDN
-        const emojiContainer = document.getElementById('emojiContainer');
-        const searchInput = document.getElementById('searchInput');
-        const filterButtonsContainer = document.getElementById('filterButtons');
-        let currentCategory = 'All';
+        const fileUpload = document.getElementById('file-upload');
+        const fileNameDisplay = document.getElementById('file-name');
+        const generateButton = document.getElementById('generate-button');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const resultDiv = document.getElementById('result');
+        const downloadLink = document.getElementById('download-link');
 
-        function generateCategories() {
-            const categories = new Set(['All']);
-            emojis.forEach(emoji => { if (emoji.category) categories.add(emoji.category); });
-            categories.forEach(category => {
-                const button = document.createElement('button');
-                button.textContent = category;
-                button.onclick = () => filterByCategory(category);
-                filterButtonsContainer.appendChild(button);
-            });
-            filterByCategory('All'); // Initial load
-        }
+        let uploadedFile = null;
 
-        function displayEmojis(filteredEmojis) {
-            emojiContainer.innerHTML = '';
-            filteredEmojis.forEach(emoji => {
-                const item = document.createElement('div');
-                item.className = 'emoji-item';
-                item.innerHTML = `<span>${emoji.native}</span><small>:${emoji.short_codes[0]}:</small>`;
-                item.onclick = () => copyToClipboard(`:${emoji.short_codes[0]}:`);
-                emojiContainer.appendChild(item);
-            });
-        }
-
-        function filterEmojis() {
-            const searchTerm = searchInput.value.toLowerCase();
-            let filtered = emojis;
-            if (currentCategory !== 'All') {
-                filtered = filtered.filter(e => e.category === currentCategory);
+        fileUpload.addEventListener('change', (event) => {
+            if (event.target.files.length > 0) {
+                uploadedFile = event.target.files[0];
+                fileNameDisplay.textContent = `Selected: ${uploadedFile.name}`;
+                generateButton.disabled = false;
+            } else {
+                uploadedFile = null;
+                fileNameDisplay.textContent = '';
+                generateButton.disabled = true;
             }
-            if (searchTerm) {
-                filtered = filtered.filter(e => 
-                    e.name.toLowerCase().includes(searchTerm) || 
-                    e.short_codes.some(code => code.toLowerCase().includes(searchTerm))
-                );
+        });
+
+        generateButton.addEventListener('click', async () => {
+            if (!uploadedFile) return;
+
+            generateButton.disabled = true;
+            loadingSpinner.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('image', uploadedFile);
+            formData.append('emojiName', uploadedFile.name.split('.')[0].replace(/[^a-z0-9]/gi, '_').toLowerCase());
+
+            try {
+                // In a real app, this would hit a Vercel serverless function to process and generate Stripe checkout
+                // For demo, simulate success and download link for simplicity within 150 lines.
+                console.log('Simulating emoji pack generation and Stripe checkout...');
+
+                // Simulate successful processing and a temporary download URL
+                const simulatedDownloadUrl = 'https://example.com/your-emoji-pack.zip'; // Placeholder
+
+                setTimeout(() => {
+                    loadingSpinner.style.display = 'none';
+                    downloadLink.href = simulatedDownloadUrl;
+                    resultDiv.style.display = 'block';
+                    // In a real app: Trigger Stripe Checkout redirection here
+                    // window.location.href = 'stripe_checkout_url_from_backend';
+                }, 2000); // Simulate API call delay
+
+            } catch (error) {
+                console.error('Error generating emoji pack:', error);
+                alert('Failed to generate emoji pack. Please try again.');
+                loadingSpinner.style.display = 'none';
+                generateButton.disabled = false;
             }
-            displayEmojis(filtered);
-        }
-
-        function filterByCategory(category) {
-            currentCategory = category;
-            Array.from(filterButtonsContainer.children).forEach(btn => {
-                btn.classList.toggle('active', btn.textContent === category);
-            });
-            filterEmojis();
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert(`Copied to clipboard: ${text}`);
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-            });
-        }
-
-        window.onload = generateCategories;
+        });
     </script>
 </body>
 </html>
